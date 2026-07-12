@@ -29,10 +29,16 @@ st.set_page_config(page_title="CropGuard AI", page_icon="🌾", layout="wide")
 # ---------------------------------------------------------------------------
 @st.cache_resource
 def load_trained_model(name: str):
-    path = os.path.join(MODEL_DIR, f"{name}.keras")
+    from model import build_baseline_cnn, build_mobilenet_model
+    if name == "baseline_cnn":
+        model = build_baseline_cnn()
+    else:
+        model = build_mobilenet_model()
+    path = os.path.join(MODEL_DIR, f"{name}.weights.h5")
     if not os.path.exists(path):
         return None
-    return tf.keras.models.load_model(path)
+    model.load_weights(path)
+    return model
 
 
 @st.cache_data

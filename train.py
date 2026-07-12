@@ -34,14 +34,14 @@ def main():
     print("\n=== Training baseline CNN (from scratch) ===")
     baseline = build_baseline_cnn()
     train_model(baseline, train_ds_p, epochs=10)
-    baseline.save(os.path.join(OUT_DIR, "baseline_cnn.keras"))
+    baseline.save_weights(os.path.join(OUT_DIR, "baseline_cnn.weights.h5"))
     results["baseline_cnn"] = evaluate_model(baseline, test_ds_p)
     print("Baseline metrics:", results["baseline_cnn"])
 
     print("\n=== Training MobileNetV2 transfer-learning model ===")
     mobilenet = build_mobilenet_model()
     train_model(mobilenet, train_ds_p, epochs=8)
-    mobilenet.save(os.path.join(OUT_DIR, "mobilenet.keras"))
+    mobilenet.save_weights(os.path.join(OUT_DIR, "mobilenet.weights.h5"))
     results["mobilenet"] = evaluate_model(mobilenet, test_ds_p)
     print("MobileNetV2 metrics:", results["mobilenet"])
 
