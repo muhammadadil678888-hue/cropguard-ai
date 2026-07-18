@@ -34,11 +34,12 @@ def load_trained_model(name: str):
         model = build_baseline_cnn()
     else:
         model = build_mobilenet_model()
-    path = os.path.join(MODEL_DIR, f"{name}.weights.h5")
-    if not os.path.exists(path):
+    ckpt_dir = os.path.join(MODEL_DIR, f"{name}_ckpt")
+    if not os.path.exists(ckpt_dir):
         return None
-    model.load_weights(path)
+    model.load_weights(os.path.join(ckpt_dir, "ckpt"))
     return model
+    
 
 
 @st.cache_data
