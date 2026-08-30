@@ -241,8 +241,16 @@ def get_weather(lat=LATITUDE, lon=LONGITUDE):
 
 with st.sidebar:
     st.subheader("🌦️ Local Weather")
-    weather = get_weather()
-    if weather:
+      SINDH_LOCATIONS = {
+        "Hyderabad": (25.396, 68.358),
+        "Jamshoro": (25.430, 68.283),
+        "Badin": (24.656, 68.837),
+        "Sukkur": (27.704, 68.847),
+        "Mirpurkhas": (25.527, 69.015),
+        "Larkana": (27.559, 68.212),
+    }
+    city = st.selectbox("Your area", list(SINDH_LOCATIONS.keys()))
+    weather = get_weather(*SINDH_LOCATIONS[city])  if weather:
         st.metric("Temperature", f"{weather['temperature']} °C")
         st.metric("Wind speed", f"{weather['windspeed']} km/h")
         if weather["windspeed"] > 15:
