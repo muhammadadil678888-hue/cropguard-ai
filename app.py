@@ -200,3 +200,59 @@ with tab_eval:
             "Metrics computed on the held-out test split. Confusion matrices are stored "
             "in saved_models/metrics.json for further inspection."
         )
+        """
+weather_widget.py
+Drop-in weather widget for CropGuardAI, powered by Open-Meteo (free, no API key, no signup).
+
+HOW TO USE:
+1. Copy the imports + get_weather() function into the top of your app.py
+   (skip re-importing anything you already import there).
+2. Copy the `with st.sidebar:` block into app.py, anywhere after your
+   `import streamlit as st` line. Streamlit renders the sidebar regardless
+   of where in the script it's defined, so exact placement doesn't matter.
+3. Add "requests" to requirements.txt if it isn't already listed.
+4. Test locally: streamlit run app.py
+5. Commit + push to GitHub — Streamlit Community Cloud redeploys automatically.
+"""
+
+import requests
+import streamlit as st
+
+# Default location: Hyderabad, Sindh. Swap these two numbers for wherever
+# you want the widget to report on.
+LATITUDE = 25.396
+LONGITUDE = 68.358
+
+
+def get_weather(lat=LATITUDE, lon=LONGITUDE):
+    """Fetch current weather from Open-Meteo. Returns None on any failure
+    so the app never crashes just because weather is unavailable."""
+    try:
+        r = requests.get(
+            "https://api.open-meteo.com/v1/forecast",
+            params={"latitude": lat, "longitude": lon, "current_weather": True},
+            timeout=5,
+        )
+        r.raise_for_status()
+        return r.json()["current_weather"]
+    except requests.RequestException:
+        return None
+
+
+with st.sidebar:
+    st.subheader("🌦️ Local Weather")
+    weather = get_weather()
+    if weather:
+        st.metric("Temperature", f"{weather['temperature']} °C")
+        st.metric("Wind speed", f"{weather['windspeed']} km/h")
+        if weather["windspeed"] > 15:
+            st.warning("Windy — not ideal for spraying")
+        else:
+            st.success("Good spraying conditions")
+    else:
+        st.info("Weather data unavailable right now")
+
+# NEXT STEP (once this is working): replace the fixed LATITUDE/LONGITUDE
+# with a st.selectbox of a few target districts/cities, so growers can
+# pick their own area instead of always seeing Hyderabad's weather.
+
