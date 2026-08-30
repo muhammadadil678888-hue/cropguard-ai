@@ -241,7 +241,7 @@ def get_weather(lat=LATITUDE, lon=LONGITUDE):
 
 with st.sidebar:
     st.subheader("🌦️ Local Weather")
-      SINDH_LOCATIONS = {
+    SINDH_LOCATIONS = {
         "Hyderabad": (25.396, 68.358),
         "Jamshoro": (25.430, 68.283),
         "Badin": (24.656, 68.837),
