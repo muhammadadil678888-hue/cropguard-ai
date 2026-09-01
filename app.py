@@ -52,6 +52,55 @@ def get_sample_images():
 
 
 # ---------------------------------------------------------------------------
+# LLM treatment advice (Google Gemini free tier — requires GEMINI_API_KEY
+# to be set in your Streamlit Cloud app's Settings > Secrets)
+# ---------------------------------------------------------------------------
+import requests
+
+GEMINI_MODEL = "gemini-2.5-flash"  # if this ever 404s, swap the model name
+                                    # (check ai.google.dev/gemini-api/docs/models)
+
+
+def get_treatment_advice(disease_name, lang):
+    try:
+        api_key = st.secrets.get("GEMINI_API_KEY")
+    except Exception as e:
+        st.caption(f"DEBUG — couldn't read secrets: {e}")
+        return None
+    if not api_key:
+        st.caption("DEBUG — GEMINI_API_KEY not found in Secrets. Check the name matches exactly.")
+        return None
+
+    prompt_lang = "Urdu" if lang == "ur" else "English"
+    prompt = (
+        f"A crop disease detection app just diagnosed a plant with: {disease_name}. "
+        f"Give a short, practical treatment recommendation for a farmer in Sindh, Pakistan, "
+        f"in simple {prompt_lang}. Include: 1) immediate action, 2) a common locally available "
+        f"treatment category (not a specific brand name), 3) one prevention tip. "
+        f"Keep it under 100 words, plain text, no headers or markdown."
+    )
+    try:
+        r = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
+            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            json={"contents": [{"parts": [{"text": prompt}]}]},
+            timeout=15,
+        )
+        r.raise_for_status()
+        data = r.json()
+        return data["candidates"][0]["content"]["parts"][0]["text"]
+    except requests.RequestException as e:
+        st.caption(f"DEBUG — request failed: {e}")
+        if getattr(e, "response", None) is not None:
+            st.caption(f"DEBUG — response body: {e.response.text[:400]}")
+        return None
+    except (KeyError, IndexError) as e:
+        st.caption(f"DEBUG — unexpected response shape: {e}")
+        st.caption(f"DEBUG — raw response: {str(data)[:400]}")
+        return None
+
+
+# ---------------------------------------------------------------------------
 # Sidebar: language + model + controls  (Problem Setup Module)
 # ---------------------------------------------------------------------------
 with st.sidebar:
@@ -158,6 +207,18 @@ with tab_diagnose:
             with exp_col2:
                 st.write(explanation_text)
                 st.progress(float(confidence))
+
+            # LLM-generated treatment advice
+            st.markdown("### 💊 Treatment Advice")
+            with st.spinner("Getting treatment advice..."):
+                advice = get_treatment_advice(pred_class, lang)
+            if advice:
+                st.info(advice)
+            else:
+                st.caption(
+                    "Treatment advice unavailable right now — check that "
+                    "GEMINI_API_KEY is set in your app's Secrets."
+                )
     else:
         st.info(t("upload_prompt", lang))
 
