@@ -57,18 +57,15 @@ def get_sample_images():
 # ---------------------------------------------------------------------------
 import requests
 
-GEMINI_MODEL = "gemini-2.5-flash"  # if this ever 404s, swap the model name
-                                    # (check ai.google.dev/gemini-api/docs/models)
+GEMINI_MODEL = "gemini-3.6-flash"  # if this ever 404s, check ai.google.dev/gemini-api/docs/models
 
 
 def get_treatment_advice(disease_name, lang):
     try:
         api_key = st.secrets.get("GEMINI_API_KEY")
-    except Exception as e:
-        st.caption(f"DEBUG — couldn't read secrets: {e}")
-        return None
+    except Exception:
+        api_key = None
     if not api_key:
-        st.caption("DEBUG — GEMINI_API_KEY not found in Secrets. Check the name matches exactly.")
         return None
 
     prompt_lang = "Urdu" if lang == "ur" else "English"
@@ -89,14 +86,7 @@ def get_treatment_advice(disease_name, lang):
         r.raise_for_status()
         data = r.json()
         return data["candidates"][0]["content"]["parts"][0]["text"]
-    except requests.RequestException as e:
-        st.caption(f"DEBUG — request failed: {e}")
-        if getattr(e, "response", None) is not None:
-            st.caption(f"DEBUG — response body: {e.response.text[:400]}")
-        return None
-    except (KeyError, IndexError) as e:
-        st.caption(f"DEBUG — unexpected response shape: {e}")
-        st.caption(f"DEBUG — raw response: {str(data)[:400]}")
+    except (requests.RequestException, KeyError, IndexError):
         return None
 
 
