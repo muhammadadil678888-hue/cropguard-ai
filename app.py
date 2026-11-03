@@ -5,27 +5,33 @@ import numpy as np
 from PIL import Image
 import json
 
-# --- THE FIX: Force legacy Keras behavior to handle the version mismatch ---
-os.environ["TF_USE_LEGACY_KERAS"] = "1"
+# --- ROBUST FIX FOR KERAS VERSION MISMATCH ---
+# This patch intercepts the model's configuration before Keras tries to build the layer.
+# It renames the problematic 'batch_shape' key to 'batch_input_shape', which both old and new Keras versions understand.
+from keras.layers import InputLayer
+original_from_config = InputLayer.from_config
 
-# Patch to intercept the 'InputLayer' error from Keras 3
-def fix_input_layer(**kwargs):
-    kwargs.pop('batch_shape', None)
-    kwargs.pop('optional', None)
-    return tf.keras.layers.InputLayer(**kwargs)
+@classmethod
+def patched_from_config(cls, config):
+    if 'batch_shape' in config:
+        config['batch_input_shape'] = config.pop('batch_shape')
+    # Also remove 'optional' if it exists, as older Keras doesn't recognize it
+    config.pop('optional', None)
+    return original_from_config.__func__(cls, config)
+
+InputLayer.from_config = patched_from_config
+# ----------------------------------------------
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(page_title="Crop Guard AI", page_icon="🌿", layout="centered")
-
 st.title("🌿 Crop Guard AI")
 st.write("Upload an image of a Mango leaf, and the AI will detect if it has a disease.")
 
 # --- 2. LOAD MODEL AND LABELS ---
 @st.cache_resource
 def load_model_and_labels():
-    # Load using the custom scope to fix the 'batch_shape' error
-    with tf.keras.utils.custom_object_scope({'InputLayer': fix_input_layer}):
-        model = tf.keras.models.load_model("crop_guard_model.keras", compile=False)
+    # Load the model with the patch active
+    model = tf.keras.models.load_model("crop_guard_model.keras", compile=False)
     
     with open("class_indices.json", "r") as f:
         class_indices = json.load(f)
@@ -54,7 +60,6 @@ uploaded_file = st.file_uploader("Choose a leaf image...", type=["jpg", "jpeg", 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
     st.image(image, caption="Uploaded Image", use_container_width=True)
-    
     st.write("🔍 Analyzing...")
     
     processed_image = preprocess_image(image)
@@ -62,7 +67,6 @@ if uploaded_file is not None:
     
     predicted_class_index = np.argmax(predictions[0])
     confidence = np.max(predictions[0]) * 100
-    
     predicted_class_name = labels[predicted_class_index]
     clean_name = predicted_class_name.replace("_", " ").title()
     
