@@ -1,7 +1,3 @@
-import os
-# Force TensorFlow to use the legacy Keras 2 format BEFORE importing tensorflow
-os.environ["TF_USE_LEGACY_KERAS"] = "1"
-
 import streamlit as st
 import tensorflow as tf
 import numpy as np
@@ -16,7 +12,7 @@ st.write("Upload an image of a Mango leaf, and the AI will detect if it has a di
 # --- 2. LOAD MODEL AND LABELS ---
 @st.cache_resource
 def load_model_and_labels():
-    # Load the model without compiling (avoids optimizer issues)
+    # Load the model directly. No patches.
     model = tf.keras.models.load_model("crop_guard_model.keras", compile=False)
     
     with open("class_indices.json", "r") as f:
